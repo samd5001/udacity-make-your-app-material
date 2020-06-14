@@ -8,5 +8,7 @@
     <string name="action_share">Share</string>
 
     <string name="up">Up</string>
+    <string name="list_item_image_description">Image to describe the book</string>
+    <string name="shared_transition">shared_transition</string>
 
 </resources>
