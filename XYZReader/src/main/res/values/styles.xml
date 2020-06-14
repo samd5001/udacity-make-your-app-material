@@ -15,7 +15,7 @@
      limitations under the License.
 -->
 
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
 
     <style name="Theme.Bacon" parent="@style/Theme.AppCompat.Light.NoActionBar">
         <item name="colorPrimary">@color/theme_primary</item>
@@ -23,12 +23,9 @@
         <item name="colorAccent">@color/theme_accent</item>
     </style>
 
-    <style name="Theme.Bacon.NoActionBar">
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
+    <style name="Theme.Bacon.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
+        <item name="android:homeAsUpIndicator">@drawable/baseline_arrow_back_white_24</item>
     </style>
-
-    <style name="Theme.Bacon.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
     <style name="Theme.Bacon.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 

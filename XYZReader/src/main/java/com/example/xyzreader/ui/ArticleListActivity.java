@@ -1,6 +1,5 @@
 package com.example.xyzreader.ui;
 
-import android.app.SharedElementCallback;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -23,7 +22,6 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -37,8 +35,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.GregorianCalendar;
-import java.util.List;
-import java.util.Map;
 
 /**
  * An activity representing a list of Articles. This activity has different presentations for
@@ -53,20 +49,17 @@ public class ArticleListActivity extends AppCompatActivity implements
     public static final String EXTRA_CURRENT_POSITION = "extra_current";
 
     private static final String TAG = ArticleListActivity.class.toString();
-
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss");
+    // Use default locale format
+    private final SimpleDateFormat outputFormat = new SimpleDateFormat();
+    // Most time functions can only handle 1902 - 2037
+    private final GregorianCalendar START_OF_EPOCH = new GregorianCalendar(2, 1, 1);
     private SwipeRefreshLayout swipeRefreshLayout;
     private RecyclerView recyclerView;
-
-    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss");
-    // Use default locale format
-    private SimpleDateFormat outputFormat = new SimpleDateFormat();
-    // Most time functions can only handle 1902 - 2037
-    private GregorianCalendar START_OF_EPOCH = new GregorianCalendar(2, 1, 1);
-
     private boolean isRefreshing = false;
 
 
-    private BroadcastReceiver refreshBroadcastReceiver = new BroadcastReceiver() {
+    private final BroadcastReceiver refreshBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (UpdaterService.BROADCAST_ACTION_STATE_CHANGE.equals(intent.getAction())) {
@@ -75,8 +68,6 @@ public class ArticleListActivity extends AppCompatActivity implements
             }
         }
     };
-
-    private Bundle reenterState;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,45 +79,6 @@ public class ArticleListActivity extends AppCompatActivity implements
 
         recyclerView = findViewById(R.id.recycler_view);
         getSupportLoaderManager().initLoader(0, null, this);
-
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            setExitSharedElementCallback(new SharedElementCallback() {
-                @Override
-                public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
-                    if (reenterState != null) {
-                        int startingPosition = reenterState.getInt(EXTRA_START_POSITION);
-                        int currentPosition = reenterState.getInt(EXTRA_CURRENT_POSITION );
-                        if (startingPosition != currentPosition) {
-                            // Change shared element if position changed
-                            String newTransitionName = getString(R.string.shared_transition) + currentPosition;
-                            View newSharedElement = recyclerView.findViewWithTag(newTransitionName);
-                            if (newSharedElement != null) {
-                                names.clear();
-                                names.add(newTransitionName);
-                                sharedElements.clear();
-                                sharedElements.put(newTransitionName, newSharedElement);
-                            }
-                        }
-
-                        reenterState = null;
-                    } else {
-                        // Activity is exiting
-                        View navigationBar = findViewById(android.R.id.navigationBarBackground);
-                        View statusBar = findViewById(android.R.id.statusBarBackground);
-                        if (navigationBar != null) {
-                            names.add(navigationBar.getTransitionName());
-                            sharedElements.put(navigationBar.getTransitionName(), navigationBar);
-                        }
-                        if (statusBar != null) {
-                            names.add(statusBar.getTransitionName());
-                            sharedElements.put(statusBar.getTransitionName(), statusBar);
-                        }
-                    }
-                }
-            });
-
-        }
 
         if (savedInstanceState == null) {
             onRefresh();
@@ -151,11 +103,6 @@ public class ArticleListActivity extends AppCompatActivity implements
         unregisterReceiver(refreshBroadcastReceiver);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-    }
-
     private void updateRefreshingUI() {
         swipeRefreshLayout.setRefreshing(isRefreshing);
     }
@@ -167,7 +114,7 @@ public class ArticleListActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onLoadFinished(Loader<Cursor> cursorLoader, Cursor cursor) {
+    public void onLoadFinished(@NonNull Loader<Cursor> cursorLoader, Cursor cursor) {
         Adapter adapter = new Adapter(cursor);
         adapter.setHasStableIds(true);
         recyclerView.setAdapter(adapter);
@@ -178,45 +125,8 @@ public class ArticleListActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onLoaderReset(Loader<Cursor> loader) {
+    public void onLoaderReset(@NonNull Loader<Cursor> loader) {
         recyclerView.setAdapter(null);
-    }
-
-    public static class ViewHolder extends RecyclerView.ViewHolder {
-        public ImageView thumbnailView;
-        public TextView titleView;
-        public TextView subtitleView;
-
-        public ViewHolder(View view) {
-            super(view);
-            thumbnailView = view.findViewById(R.id.thumbnail);
-            titleView = view.findViewById(R.id.article_title);
-            subtitleView = view.findViewById(R.id.article_subtitle);
-        }
-    }
-
-    @Override
-    public void onActivityReenter(int requestCode, Intent data) {
-        super.onActivityReenter(requestCode, data);
-        reenterState = new Bundle(data.getExtras());
-        int startingPosition = reenterState.getInt(EXTRA_START_POSITION);
-        int currentPosition = reenterState.getInt(EXTRA_CURRENT_POSITION);
-        if (startingPosition != currentPosition) {
-            recyclerView.scrollToPosition(currentPosition);
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            postponeEnterTransition();
-            recyclerView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                @Override
-                public boolean onPreDraw() {
-                    recyclerView.getViewTreeObserver().removeOnPreDrawListener(this);
-                        recyclerView.requestLayout();
-                        startPostponedEnterTransition();
-                        return true;
-                }
-            });
-        }
     }
 
     @Override
@@ -229,8 +139,21 @@ public class ArticleListActivity extends AppCompatActivity implements
         return super.onOptionsItemSelected(menuItem);
     }
 
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+        public final ImageView thumbnailView;
+        public final TextView titleView;
+        public final TextView subtitleView;
+
+        public ViewHolder(View view) {
+            super(view);
+            thumbnailView = view.findViewById(R.id.thumbnail);
+            titleView = view.findViewById(R.id.article_title);
+            subtitleView = view.findViewById(R.id.article_subtitle);
+        }
+    }
+
     private class Adapter extends RecyclerView.Adapter<ViewHolder> {
-        private Cursor mCursor;
+        private final Cursor mCursor;
 
         public Adapter(Cursor cursor) {
             mCursor = cursor;
@@ -315,7 +238,7 @@ public class ArticleListActivity extends AppCompatActivity implements
 
             Picasso.get()
                     .load(mCursor.getString(ArticleLoader.Query.THUMB_URL))
-                    .resize(600,400)
+                    .resize(600, 400)
                     .centerCrop()
                     .into(holder.thumbnailView);
         }

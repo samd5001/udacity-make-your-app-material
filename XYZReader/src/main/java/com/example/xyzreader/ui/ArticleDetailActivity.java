@@ -1,29 +1,19 @@
 package com.example.xyzreader.ui;
 
-import android.content.Intent;
 import android.database.Cursor;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.app.LoaderManager;
-import android.support.v4.app.SharedElementCallback;
 import android.support.v4.content.Loader;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ImageView;
 
 import com.example.xyzreader.R;
 import com.example.xyzreader.data.ArticleLoader;
 import com.example.xyzreader.data.ItemsContract;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * An activity representing a single Article detail screen, letting you swipe between articles.
@@ -39,44 +29,7 @@ public class ArticleDetailActivity extends AppCompatActivity
     private ViewPager mPager;
     private MyPagerAdapter mPagerAdapter;
 
-    private int startPosition;
     private int currentPosition;
-
-    private ArticleDetailFragment currentFragment;
-    private boolean isReturning;
-
-    private final SharedElementCallback mCallback = new SharedElementCallback() {
-        @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-        @Override
-        public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
-            if (isReturning) {
-
-                ImageView sharedElement = currentFragment.getImage();
-                if (sharedElement == null) {
-                    names.clear();
-                    sharedElements.clear();
-                } else if (currentPosition != startPosition) {
-                    // If the user has swiped to a different ViewPager page, then we need to
-                    // remove the old shared element and replace it with the new shared element
-                    // that should be transitioned instead.
-                    names.clear();
-                    names.add(sharedElement.getTransitionName());
-                    sharedElements.clear();
-                    sharedElements.put(sharedElement.getTransitionName(), sharedElement);
-                }
-            }
-        }
-    };
-
-    @Override
-    public void finishAfterTransition() {
-        isReturning = true;
-        Intent data = new Intent();
-        data.putExtra(ArticleListActivity.EXTRA_START_POSITION, startPosition);
-        data.putExtra(ArticleListActivity.EXTRA_CURRENT_POSITION, currentPosition);
-        setResult(RESULT_OK, data);
-        super.finishAfterTransition();
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,16 +37,6 @@ public class ArticleDetailActivity extends AppCompatActivity
 
         setContentView(R.layout.activity_article_detail);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().getDecorView().setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
-                            View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
-
-            postponeEnterTransition();
-            setEnterSharedElementCallback(mCallback);
-        }
-
-        startPosition = getIntent().getIntExtra(ArticleListActivity.EXTRA_START_POSITION,  0);
         if (savedInstanceState == null) {
             if (getIntent() != null && getIntent().getData() != null) {
                 mStartId = ItemsContract.Items.getItemId(getIntent().getData());
@@ -178,12 +121,6 @@ public class ArticleDetailActivity extends AppCompatActivity
     private class MyPagerAdapter extends FragmentStatePagerAdapter {
         public MyPagerAdapter(FragmentManager fm) {
             super(fm);
-        }
-
-        @Override
-        public void setPrimaryItem(ViewGroup container, int position, Object object) {
-            super.setPrimaryItem(container, position, object);
-            currentFragment = (ArticleDetailFragment) object;
         }
 
         @Override
